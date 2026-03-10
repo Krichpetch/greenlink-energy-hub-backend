@@ -5,19 +5,19 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 // Import routes
-const authRoutes = require('./routes/auth.routes');
-const energyRoutes = require('./routes/energy.routes');
-const tradeRoutes = require('./routes/trade.routes');
+const authRoutes = require('./src/routes/Auth.routes');
+const energyRoutes = require('./src/routes/Energy.routes');
+const tradeRoutes = require('./src/routes/Trade.routes');
 
 // Import error handlers
-const { errorHandler, notFound } = require('./middlewares/error.middleware');
+const { errorHandler, notFound } = require('./src/middlewares/error.middleware');
 
 const app = express();
 
 // Middlewares
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000'],
   credentials: true,
 }));
 app.use(express.json());

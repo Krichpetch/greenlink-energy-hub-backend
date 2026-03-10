@@ -1,4 +1,4 @@
-const TradeModel = require('../models.Trade.model');
+const TradeModel = require('../models/Trade.model');
 const UserModel = require('../models/User.model');
 
 /**

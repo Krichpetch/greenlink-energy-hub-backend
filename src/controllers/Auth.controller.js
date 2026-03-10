@@ -3,20 +3,17 @@ const UserModel = require('../models/User.model');
 
 /**
  * POST /api/auth/register
- * Called after Firebase client-side registration to create Firestore profile
  */
 const registerUser = async (req, res, next) => {
   try {
     const { displayName, role, address, solarCapacityKw } = req.body;
-    const { uid, email } = req.user; // from verifyToken middleware
+    const { uid, email } = req.user;
 
-    // Check if user already exists
     const existing = await UserModel.getById(uid);
     if (existing) {
-      return res.status(409).json({ error: 'User profile already exists' });
+      return res.status(200).json({ message: 'Profile already exists', user: existing });
     }
 
-    // Set custom claims for role-based access
     await auth.setCustomUserClaims(uid, { role: role || 'consumer' });
 
     const user = await UserModel.create(uid, {
@@ -35,14 +32,22 @@ const registerUser = async (req, res, next) => {
 
 /**
  * GET /api/auth/me
- * Returns current user's Firestore profile
+ * Auto-creates profile if missing (handles case where Firestore was down during registration)
  */
 const getMe = async (req, res, next) => {
   try {
-    const user = await UserModel.getById(req.user.uid);
+    let user = await UserModel.getById(req.user.uid);
+
     if (!user) {
-      return res.status(404).json({ error: 'User profile not found' });
+      user = await UserModel.create(req.user.uid, {
+        email: req.user.email || '',
+        displayName: req.user.name || req.user.email?.split('@')[0] || 'User',
+        role: req.user.role || 'consumer',
+        address: '',
+        solarCapacityKw: 0,
+      });
     }
+
     res.json({ user });
   } catch (error) {
     next(error);
@@ -51,7 +56,6 @@ const getMe = async (req, res, next) => {
 
 /**
  * PATCH /api/auth/me
- * Update current user's profile
  */
 const updateMe = async (req, res, next) => {
   try {
