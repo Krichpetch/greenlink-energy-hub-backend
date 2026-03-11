@@ -72,4 +72,47 @@ const updateMe = async (req, res, next) => {
   }
 };
 
-module.exports = { registerUser, getMe, updateMe };
+/**
+ * POST /api/auth/device-token
+ * Used by IoT gateway (WISE-6610) to get a Firebase ID token for API auth
+ * No verifyToken middleware — this is the login itself
+ */
+const getDeviceToken = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_WEB_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          returnSecureToken: true,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
+      return res.status(401).json({ error: data.error.message });
+    }
+
+    res.json({
+      idToken: data.idToken,
+      expiresIn: data.expiresIn, // 3600 seconds
+      userId: data.localId,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { registerUser, getMe, updateMe, getDeviceToken };
